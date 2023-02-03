@@ -4,10 +4,6 @@ from random import sample, randint
 GAME_SIZE = 600
 SPACE_SIZE = 20
 AMOUNT = int(GAME_SIZE / SPACE_SIZE)
-i = 0
-
-import sys
-sys.setrecursionlimit(1500)
 
 class MineSweeper:
     bomb_columns = []
@@ -19,25 +15,46 @@ class MineSweeper:
         self.window.title("Minesweeper")
         self.window.resizable(False, False)
         self.window.bind("<Button-3>", lambda event: self.right_click_square())
+        self.window.bind("<Button-1>", lambda event: self.click())
         self.window.bind("<Escape>", lambda event: self.restart())
         self.checked = []
         
         self.canvas = Canvas(self.window, bg = "#000000", width = GAME_SIZE, height = GAME_SIZE, bd = 0, relief = RAISED)
         self.canvas.pack()
 
-        self.generate_bombs()
-        self.make_squares()
-        self.show_start()
+        self.loaded_squares = 0
+
+        self.start_image = PhotoImage(file = "resources/start_menu.png")
+        self.on_start = True
+        self.menu = self.canvas.create_image(0, 0 , anchor=NW, image = self.start_image, tag = "start")
+        
         self.window.mainloop()
+
+    def start(self):
+        
+        self.canvas.delete("start")
+        self.loading_image = PhotoImage(file = "resources/loading_screen.png")
+        self.canvas.create_image(0, 0, anchor = NW, image = self.loading_image, tag = "loading_image")
+        self.generate_bombs()
+        self.canvas.update()
+        self.make_squares()
+        self.canvas.delete("loading_image")
+        self.show_start()
+        self.on_start = False
 
     def right_click_square(self):
         self.game_columns[self.mouse_on[0]][self.mouse_on[1]].switch_texture(flagged = False, game = self)
     
-    def left_click_square(self, row, column) -> bool:
+    def click(self):
+        if self.on_start:
+            self.start()
+
+    def left_click_square(self, row, column):
         self.game_columns[column][row].switch_texture(flagged = True, game = self)
     
     def restart(self):
-        self.canvas.delete("all")
+        self = MineSweeper()
+        '''self.canvas.delete("all")
         self.checked = []
         self.bomb_columns = []
         self.game_columns = [[] for _ in range(AMOUNT)]
@@ -45,7 +62,7 @@ class MineSweeper:
             for row in range(len(self.game_columns[column])):
                     self.game_columns[column][row] = square()
         self.generate_bombs()
-        self.make_squares()
+        self.make_squares()'''
     
     def lose(self):
         pass
@@ -53,7 +70,8 @@ class MineSweeper:
     def make_squares(self):
         for column in range(0, 30):
             for row in range(0, 30):
-                self.game_columns[column].append(square(row, column, self))
+                self.loaded_squares += 1
+                self.game_columns[column].append(Square(row, column, self))
 
     def generate_bombs(self):
         
@@ -110,7 +128,7 @@ class MineSweeper:
         self.game_columns[empty_squares[rand_id][0]][empty_squares[rand_id][1]].switch_texture(flagged = False, game = self)
                 
 
-class square:
+class Square:   
     def __init__(self, row, column, game: MineSweeper):
         self.num_images = []
         self.number = 0
